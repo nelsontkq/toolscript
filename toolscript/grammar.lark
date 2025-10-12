@@ -1,0 +1,71 @@
+// ToolScript v2
+start: script
+script: declaration stmt*
+
+tool_name: NAME
+
+?stmt: let_stmt
+     | call_stmt
+     | if_stmt
+     | return_stmt
+     | NL              -> empty
+
+let_stmt: "LET" NAME "=" expr NL
+
+call_stmt: "CALL" NAME kvl_args? capture? NL
+capture: "->" NAME
+
+if_stmt: "IF" cond ":" block else_block?
+else_block: "ELSE" ":" block
+
+return_stmt: "RETURN" expr NL
+
+block: "{" stmt* "}" NL?
+
+?expr: value
+     | varref
+
+kvl_args: kv_pair+
+kv_pair: key "=" value
+key: NAME
+
+?value: atom
+      | array
+      | map
+
+?atom: NUMBER
+     | "true"   -> true
+     | "false"  -> false
+     | "null"   -> null
+     | SQUOTE_STRING
+     | DQ_STRING
+     | bareword
+     | varref
+varref: "$" pathseg (("." pathseg) | index)*
+pathseg: NAME
+index: "[" NUMBER "]"
+
+array: "[" [value ("," value)*] "]"
+map: "(" kv_pair+ ")"
+
+?cond: or_expr
+?or_expr: and_expr ( "OR" and_expr )*
+?and_expr: not_expr ( "AND" not_expr )*
+?not_expr: "NOT" not_expr -> not
+         | cmp
+         | "(" cond ")"
+
+cmp: (varref | atom) CMP (varref | atom)
+CMP: "==" | "!=" | "<" | "<=" | ">" | ">="
+
+SQUOTE_STRING: /'([^'\\]|\\.|\\\n)*'/
+bareword: /[A-Za-z0-9._:+\-\/]+/
+
+%import common.CNAME            -> NAME
+%import common.SIGNED_NUMBER    -> NUMBER
+%import common.ESCAPED_STRING   -> DQ_STRING
+%import common.NEWLINE
+%import common.WS_INLINE
+
+NL: NEWLINE+
+%ignore WS_INLINE
