@@ -28,6 +28,7 @@ export type Stmt =
   | { kind: "Let"; name: string; expr: Value | VarRef; loc?: SrcLoc }
   | { kind: "Call"; call: FunctionCall }
   | { kind: "If"; cond: Cond; then: PlanNode; else?: PlanNode }
+  | { kind: "For"; item: string; iterable: Value | VarRef; body: PlanNode; loc?: SrcLoc }
   | { kind: "Return"; expr: Value | VarRef }
   | { kind: "Empty" };
 
@@ -94,6 +95,8 @@ class Parser {
           if (s.else) {
             collect(s.else);
           }
+        } else if (s.kind === "For") {
+          collect(s.body);
         }
       };
       if (n.kind === "Script" || n.kind === "Block") {
@@ -119,6 +122,8 @@ class Parser {
         return this.parseCall();
       case "IF":
         return this.parseIf();
+      case "FOR":
+        return this.parseFor();
       case "RETURN":
         return this.parseReturn();
       case "NEWLINE":
@@ -181,14 +186,21 @@ class Parser {
   private parseIf(): Stmt {
     this.match("IF");
     const cond = this.parseCond();
-    this.match("COLON");
-    const then = this.parseBlock();
+    const then = this.parseBlockAfterColon();
     let els: PlanNode | undefined;
     if (this.try("ELSE")) {
-      this.match("COLON");
-      els = this.parseBlock();
+      els = this.parseBlockAfterColon();
     }
     return { kind: "If", cond, then, else: els };
+  }
+
+  private parseFor(): Stmt {
+    const kw = this.match("FOR");
+    const item = this.match("NAME").text;
+    this.match("IN");
+    const iterable = this.parseValueOrVar();
+    const body = this.parseBlockAfterColon();
+    return { kind: "For", item, iterable, body, loc: { line: kw.line, col: kw.col } };
   }
 
   private parseReturn(): Stmt {
@@ -210,6 +222,16 @@ class Parser {
     // optional trailing NL
     if (this.peek().type === "NEWLINE") this.skipNewlines();
     return { kind: "Block", body };
+  }
+
+  private parseBlockAfterColon(): PlanNode {
+    this.match("COLON");
+    this.skipNewlines();
+    while (this.peek().type === "COLON") {
+      this.next();
+      this.skipNewlines();
+    }
+    return this.parseBlock();
   }
 
   // --- Expressions & Values ---
@@ -244,6 +266,9 @@ class Parser {
       case "SQString":
         this.next();
         return { kind: "String", value: t.text };
+      case "NAME":
+        this.next();
+        return { kind: "Bare", value: t.text };
       case "BARE":
         this.next();
         return { kind: "Bare", value: t.text };

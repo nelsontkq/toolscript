@@ -3,6 +3,8 @@ export type TokType =
   | "CALL"
   | "IF"
   | "ELSE"
+  | "FOR"
+  | "IN"
   | "RETURN"
   | "LPAREN"
   | "RPAREN"
@@ -42,6 +44,8 @@ const KEYWORDS: Record<string, TokType> = {
   CALL: "CALL",
   IF: "IF",
   ELSE: "ELSE",
+  FOR: "FOR",
+  IN: "IN",
   RETURN: "RETURN",
   AND: "AND",
   OR: "OR",

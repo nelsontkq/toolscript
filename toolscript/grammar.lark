@@ -1,12 +1,13 @@
 // ToolScript v2
 start: script
-script: declaration stmt*
+script: stmt*
 
 tool_name: NAME
 
 ?stmt: let_stmt
      | call_stmt
      | if_stmt
+     | for_stmt
      | return_stmt
      | NL              -> empty
 
@@ -17,6 +18,7 @@ capture: "->" NAME
 
 if_stmt: "IF" cond ":" block else_block?
 else_block: "ELSE" ":" block
+for_stmt: "FOR" NAME "IN" expr ":" block
 
 return_stmt: "RETURN" expr NL
 

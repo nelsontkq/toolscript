@@ -52,6 +52,9 @@ export async function executeToolScript(
       case "String":
         return v.value;
       case "Bare": {
+        if (Object.prototype.hasOwnProperty.call(vars, v.value)) {
+          return vars[v.value];
+        }
         if (v.value === "true") {
           return true;
         }
@@ -173,6 +176,31 @@ export async function executeToolScript(
           if (ret !== undefined) {
             return ret;
           }
+          break;
+        }
+        case "For": {
+          const collection = resolveValue(s.iterable);
+          if (!Array.isArray(collection)) {
+            throw new Error("FOR expects iterable to resolve to an array");
+          }
+          const hadPrior = Object.prototype.hasOwnProperty.call(vars, s.item);
+          const prior = vars[s.item];
+          for (let idx = 0; idx < collection.length; idx++) {
+            checkLimits();
+            vars[s.item] = collection[idx] as JSONLike;
+            trace.push({
+              kind: "FOR_ITER",
+              info: { item: s.item, index: idx, value: collection[idx] },
+            });
+            const ret = await runBlock(s.body);
+            if (ret !== undefined) {
+              if (!hadPrior) delete vars[s.item];
+              else vars[s.item] = prior;
+              return ret;
+            }
+          }
+          if (!hadPrior) delete vars[s.item];
+          else vars[s.item] = prior;
           break;
         }
         case "Return": {
