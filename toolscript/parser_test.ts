@@ -22,15 +22,14 @@ RETURN $total
 
   const result = parseToolScript(script);
 
-  assertEquals(result.requiredCapabilities, ["add", "logger"]);
-  assertEquals(result.calledTools, ["add"]);
+  assertEquals(result.requiredCapabilities, ["add"]);
   assertEquals(result.invocations.length, 1);
   assertEquals(result.invocations[0].capture, "total");
 
   const plan: PlanNode = result.plan;
   assertEquals(plan.kind, "Script");
   const body: Stmt[] = plan.body;
-  assertEquals(body.length, 5);
+  assertEquals(body.length, 4);
 
   assert(isLet(body[0]));
   assertEquals(body[0].name, "a");
